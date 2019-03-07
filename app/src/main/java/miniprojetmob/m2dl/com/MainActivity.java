@@ -10,6 +10,8 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Handler;
+import android.os.PowerManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,7 +20,9 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +46,34 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private List<String> toucheValues = new ArrayList<>();
     private Map<Double, Double> locationValues = new ArrayMap<>();
     private List<String> sonorValues = new ArrayList<>();
+
+    private static final int POLL_INTERVAL = 300;
+    private boolean mRunning = false;
+    private int mThreshold;
+    int RECORD_AUDIO = 0;
+    private PowerManager.WakeLock mWakeLock;
+    private Handler mHandler = new Handler();
+    private TextView mStatusView, tv_noise;
+    private DetectNoise mSensor;
+    ProgressBar bar;
+
+    private Runnable mSleepTask = new Runnable() {
+        public void run(){
+            start();
+        }
+    };
+
+    private Runnable mPollTask = new Runnable() {
+        public void run() {
+            double amp = mSensor.getAmplitude();
+            updateDisplay("Monitoring voice ", amp);
+
+            if(amp > mThreshold){
+                callForHelp(amp);
+            }
+            mHandler.postDelayed(mPollTask, POLL_INTERVAL);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +112,15 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         // on veut que notre objet soit averti lors d'un évènement OnTouch sur
         // notre TextView :
         tv.setOnTouchListener(this);
+
+        //sonore
+        mStatusView = (TextView) findViewById(R.id.status);
+        tv_noise = (TextView) findViewById(R.id.tv_noise);
+        bar = (ProgressBar) findViewById(R.id.progressBar1);
+        mSensor = new DetectNoise();
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "NoiseAlert");
+
 
         ll.addView(tvlight);
         //ll.addView(tvGPS);
@@ -127,8 +168,60 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         super.onResume();
         sensorManager.registerListener(this, lightsensor, SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+
+        initializeApplicationConstants();
+        if(!mRunning){
+            mRunning = true;
+            start();
+        }
     }
 
+    @Override
+    public void onStop(){
+        super.onStop();
+        stop();
+    }
+
+    private void start(){
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},RECORD_AUDIO);
+        }
+
+        mSensor.start();
+        if(!mWakeLock.isHeld()){
+            mWakeLock.acquire();
+        }
+
+        mHandler.postDelayed(mPollTask, POLL_INTERVAL);
+    }
+
+    private void stop(){
+        if(mWakeLock.isHeld()){
+            mWakeLock.release();
+        }
+
+        mHandler.removeCallbacks(mSleepTask);
+        mHandler.removeCallbacks(mPollTask);
+        mSensor.stop();
+        bar.setProgress(0);
+        updateDisplay("stopped", 0.0);
+        mRunning = false;
+    }
+
+    private void initializeApplicationConstants(){
+        mThreshold = 8;
+    }
+
+    private void updateDisplay(String status, double signalEMA){
+        mStatusView.setText(status);
+        bar.setProgress((int)signalEMA);
+        tv_noise.setText(signalEMA+"dB");
+    }
+
+    private void callForHelp(double signalEMA){
+        Toast.makeText(getApplicationContext(), "Noise", Toast.LENGTH_LONG).show();
+        Log.d("noise", String.valueOf(signalEMA));
+    }
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
 
