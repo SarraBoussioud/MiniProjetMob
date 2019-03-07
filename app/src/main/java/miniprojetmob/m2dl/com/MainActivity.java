@@ -13,10 +13,16 @@ import android.location.LocationManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.ArrayMap;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener, SensorEventListener, LocationListener {
     private SensorManager sensorManager;
@@ -30,6 +36,12 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     private float mSensorX, mSensorY;
     private LocationManager locationManager;
+
+    private List<String> lightValues = new ArrayList<>();
+    private Map<Float, Float> accelerometerValues = new ArrayMap<>();
+    private List<String> toucheValues = new ArrayList<>();
+    private Map<Double, Double> locationValues = new ArrayMap<>();
+    private List<String> sonorValues = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +93,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
         float posx = motionEvent.getX();
+        if(toucheValues.size() < 5){
+            toucheValues.add(Float.toString(posx));
+            Log.d("valeurs touch", toucheValues.toString());
+        }
         tv.setText("X:" + Float.toString(posx));
 
         return true;
@@ -88,11 +104,20 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
+        String lightvalue = String.valueOf(sensorEvent.values[0]);
         if (sensorEvent.sensor.getType() == Sensor.TYPE_LIGHT) {
-            tvlight.setText("Light Sensor: " + String.valueOf(sensorEvent.values[0]));
+            if(lightValues.size() < 5){
+                lightValues.add(lightvalue);
+                Log.d("valeurs light", lightValues.toString());
+            }
+            tvlight.setText("Light Sensor: " + lightvalue);
         } else if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
             mSensorX = sensorEvent.values[0];
             mSensorY = sensorEvent.values[1];
+            if(accelerometerValues.size() < 5){
+                accelerometerValues.put(mSensorX, mSensorY);
+                Log.d("valeurs accelerometre", accelerometerValues.toString());
+            }
             tvaccele.setText(String.valueOf("Acceleration X: " + mSensorX + " Acceleration Y: " + mSensorY));
         }
     }
@@ -115,6 +140,11 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         longtitude = location.getLongitude();
         double latitude = 0;
         latitude = location.getLatitude();
+        if(locationValues.size()<5){
+            locationValues.put(longtitude, latitude);
+            Log.d("valeurs de localisation", locationValues.toString());
+        }
+
         tvGPS.setText("Longtitude: " + longtitude + " Latitude: " + latitude);
     }
 
