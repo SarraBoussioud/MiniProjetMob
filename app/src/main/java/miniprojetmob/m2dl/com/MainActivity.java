@@ -1,7 +1,9 @@
 package miniprojetmob.m2dl.com;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -10,15 +12,19 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
+import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity implements View.OnTouchListener, SensorEventListener, LocationListener {
+public class MainActivity extends AppCompatActivity implements View.OnTouchListener, SensorEventListener {
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private Sensor lightsensor;
@@ -27,13 +33,21 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private TextView tvlight;
     private TextView tvaccele;
     private TextView tvGPS;
+    private TextView textView;
+
+    private Button button;
 
     private float mSensorX, mSensorY;
     private LocationManager locationManager;
+    private LocationListener locationListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        button = (Button) findViewById(R.id.button);
+        textView = (TextView) findViewById(R.id.textView);
 
         // Get an instance to the accelerometer
         this.sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -47,21 +61,33 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         tvaccele = new TextView(this);
         tvGPS = new TextView(this);
 
-        //locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        //if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            //return;
-        //}
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        locationListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                textView.append("\n" + location.getLatitude() + " " + location.getLongitude());
+            }
 
-        //Location location = locationManager.getLastKnownLocation(locationManager.NETWORK_PROVIDER);
-        //onLocationChanged(location);
+            @Override
+            public void onStatusChanged(String s, int i, Bundle bundle) {
 
+            }
+
+            @Override
+            public void onProviderEnabled(String s) {
+
+            }
+
+            @Override
+            public void onProviderDisabled(String s) {
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivity(intent);
+            }
+        };
+        configure();
+    }
+
+        /*
         LinearLayout ll = new LinearLayout(this);
         ll.setOrientation(LinearLayout.VERTICAL);
 
@@ -70,19 +96,41 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         tv.setOnTouchListener(this);
 
         ll.addView(tvlight);
-        //ll.addView(tvGPS);
+        ll.addView(tvGPS);
         ll.addView(tvaccele);
         ll.addView(tv);
 
         // remplacer tout le contenu de notre activité par le TextView
-        setContentView(ll);
+        setContentView(ll); */
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode){
+            case 10:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                    configure();
+                return;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
+
+    void configure(){
+        // first check for permissions
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.INTERNET}
+                        ,10);
+            }
+            return;
+        }
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,5000,0,locationListener);
+    }
+
 
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
         float posx = motionEvent.getX();
         tv.setText("X:" + Float.toString(posx));
-
         return true;
     }
 
@@ -106,30 +154,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
-
-    }
-
-    @Override
-    public void onLocationChanged(Location location) {
-        double longtitude = 0;
-        longtitude = location.getLongitude();
-        double latitude = 0;
-        latitude = location.getLatitude();
-        tvGPS.setText("Longtitude: " + longtitude + " Latitude: " + latitude);
-    }
-
-    @Override
-    public void onStatusChanged(String s, int i, Bundle bundle) {
-
-    }
-
-    @Override
-    public void onProviderEnabled(String s) {
-
-    }
-
-    @Override
-    public void onProviderDisabled(String s) {
 
     }
 }
