@@ -10,12 +10,12 @@
     <FrameLayout
         android:id="@+id/frameLayout1"
         android:layout_width="350dp"
-        android:layout_height="76dp"
+        android:layout_height="70dp"
         android:layout_marginStart="30dp"
-        android:layout_marginTop="130dp"
-        android:layout_marginEnd="31dp"
-        android:layout_marginBottom="626dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginTop="100dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="10dp"
+        app:layout_constraintBottom_toTopOf="@+id/textView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -29,14 +29,14 @@
     <FrameLayout
         android:id="@+id/frameLayout2"
         android:layout_width="350dp"
-        android:layout_height="78dp"
+        android:layout_height="70dp"
         android:layout_marginStart="30dp"
-        android:layout_marginTop="200dp"
-        android:layout_marginEnd="31dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="30dp"
         app:layout_constraintBottom_toTopOf="@+id/textView2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@+id/textView">
 
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart2"
@@ -47,11 +47,10 @@
     <FrameLayout
         android:id="@+id/frameLayout3"
         android:layout_width="350dp"
-        android:layout_height="78dp"
+        android:layout_height="70dp"
         android:layout_marginStart="30dp"
+        android:layout_marginTop="8dp"
         android:layout_marginEnd="31dp"
-        android:layout_marginBottom="30dp"
-        app:layout_constraintBottom_toTopOf="@+id/textView3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView2">
@@ -59,16 +58,16 @@
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart3"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="68dp" />
     </FrameLayout>
 
     <FrameLayout
         android:id="@+id/frameLayout4"
         android:layout_width="350dp"
-        android:layout_height="78dp"
+        android:layout_height="70dp"
         android:layout_marginStart="30dp"
-        android:layout_marginEnd="31dp"
-        android:layout_marginBottom="30dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="10dp"
         app:layout_constraintBottom_toTopOf="@+id/textView4"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -77,15 +76,17 @@
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart4"
             android:layout_width="match_parent"
-            android:layout_height="61dp" />
+            android:layout_height="match_parent" />
     </FrameLayout>
 
     <FrameLayout
         android:id="@+id/frameLayout5"
         android:layout_width="350dp"
-        android:layout_height="74dp"
+        android:layout_height="70dp"
         android:layout_marginStart="30dp"
-        android:layout_marginEnd="31dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="9dp"
         app:layout_constraintBottom_toTopOf="@+id/textView5"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -101,10 +102,8 @@
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="190dp"
-        android:layout_marginTop="70dp"
-        android:layout_marginEnd="181dp"
-        android:layout_marginBottom="60dp"
+        android:layout_marginStart="185dp"
+        android:layout_marginEnd="185dp"
         android:text="Sound"
         app:layout_constraintBottom_toTopOf="@+id/frameLayout2"
         app:layout_constraintEnd_toEndOf="parent"
@@ -117,7 +116,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="190dp"
         android:layout_marginTop="10dp"
-        android:layout_marginEnd="189dp"
+        android:layout_marginEnd="190dp"
         android:layout_marginBottom="10dp"
         android:text="Light"
         app:layout_constraintBottom_toTopOf="@+id/frameLayout3"
@@ -127,18 +126,19 @@
 
     <TextView
         android:id="@+id/textView3"
-        android:layout_width="86dp"
-        android:layout_height="26dp"
-        android:layout_marginStart="162dp"
-        android:layout_marginEnd="163dp"
-        android:layout_marginBottom="5dp"
+        android:layout_width="81dp"
+        android:layout_height="28dp"
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="160dp"
+        android:layout_marginBottom="10dp"
         android:text="Acceleration
 "
         app:layout_constraintBottom_toTopOf="@+id/frameLayout4"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/frameLayout3" />
+        app:layout_constraintTop_toBottomOf="@+id/frameLayout3"
+        app:layout_constraintVertical_chainStyle="spread_inside" />
 
     <TextView
         android:id="@+id/textView4"
@@ -158,13 +158,11 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="175dp"
         android:layout_marginEnd="180dp"
-        android:layout_marginBottom="80dp"
+        android:layout_marginBottom="60dp"
         android:text="Screen X"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toEndOf="@+id/frameLayout5"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/frameLayout5" />
 
 </android.support.constraint.ConstraintLayout>
