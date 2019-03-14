@@ -117,6 +117,28 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             }
         };
         configure();
+
+        /**
+         * When the user touch a Sensor TextView
+         * Then it starts the Game with the values from the sensor
+         */
+        tvLight.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, Jeu.class);
+                intent.putExtra("lightValues", (ArrayList<Float>)listeLight);
+                startActivity(intent);
+            }
+        });
+
+        tvnoise.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, Jeu.class);
+                intent.putExtra("listeSonore", (ArrayList<Double>)listeSonore);
+                startActivity(intent);
+            }
+        });
     }
 
     @Override
