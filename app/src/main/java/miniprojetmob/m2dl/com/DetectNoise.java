@@ -15,7 +15,7 @@ public class DetectNoise {
             mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
             mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-
+            mRecorder.setOutputFile("dev/null");
             try{
                 mRecorder.prepare();
             }catch (IllegalStateException e){
@@ -38,15 +38,11 @@ public class DetectNoise {
     }
 
     public double getAmplitude(){
-        if(mRecorder != null)
-            return 20*Math.log10(mRecorder.getMaxAmplitude() / 2700.0);
+        if(mRecorder != null){
+            return 20*Math.log10(mRecorder.getMaxAmplitude());
+        }
         else
             return 0;
     }
 
-    public double getAmplitudeEMA(){
-        double amp = getAmplitude();
-        mEMA = EMA_FILTER * amp + (1.0 - EMA_FILTER) * mEMA;
-        return mEMA;
-    }
 }
