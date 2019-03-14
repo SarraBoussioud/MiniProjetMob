@@ -94,6 +94,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, Jeu.class);
+                intent.putExtra("lightValues", (ArrayList<String>)lightValues);
                 startActivity(intent);
             }
         });
