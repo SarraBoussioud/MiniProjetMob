@@ -90,7 +90,13 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         // remplacer tout le contenu de notre activité par le TextView
         setContentView(ll);
 
-        ll.setOnTouchListener(this);
+        tvlight.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, Jeu.class);
+                startActivity(intent);
+            }
+        });
     }
 
     @Override
@@ -101,9 +107,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             Log.d("valeurs touch", toucheValues.toString());
         }
         tv.setText("X:" + Float.toString(posx));
-
-        Intent intent = new Intent(this, Jeu.class);
-        startActivity(intent);
 
         return true;
     }
