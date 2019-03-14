@@ -2,6 +2,7 @@ package miniprojetmob.m2dl.com;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -88,6 +89,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         // remplacer tout le contenu de notre activité par le TextView
         setContentView(ll);
+
+        ll.setOnTouchListener(this);
     }
 
     @Override
@@ -98,6 +101,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             Log.d("valeurs touch", toucheValues.toString());
         }
         tv.setText("X:" + Float.toString(posx));
+
+        Intent intent = new Intent(this, Jeu.class);
+        startActivity(intent);
 
         return true;
     }
