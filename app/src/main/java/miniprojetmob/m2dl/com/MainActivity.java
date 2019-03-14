@@ -11,6 +11,11 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
+import android.os.Handler;
+import android.os.PowerManager;
+import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,7 +23,6 @@ import android.util.ArrayMap;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -26,150 +30,211 @@ import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener, SensorEventListener, LocationListener {
+    //les capteurs
     private SensorManager sensorManager;
     private Sensor accelerometer;
-    private Sensor lightsensor;
+    private Sensor lightSensor;
 
-    private TextView tv;
-    private TextView tvlight;
-    private TextView tvaccele;
-    private TextView tvGPS;
+    //listes
+    private List<Double> listeSonore = new ArrayList<Double>();
+    private Map<Float, Float> accelerometerValues = new ArrayMap<>();
+    private List<Float> toucheValues = new ArrayList<>();
+    private Map<Double, Double> locationValues = new ArrayMap<>();
+    private List<Float> listeLight = new ArrayList<>();
 
+    //variables
+    private boolean mRunning = false;
+    private PowerManager.WakeLock mWakeLock;
+    private Handler mHandler = new Handler();
+    private DetectNoise mSensor;
     private float mSensorX, mSensorY;
     private LocationManager locationManager;
+    private LocationListener locationListener;
 
-    private List<String> lightValues = new ArrayList<>();
-    private Map<Float, Float> accelerometerValues = new ArrayMap<>();
-    private List<String> toucheValues = new ArrayList<>();
-    private Map<Double, Double> locationValues = new ArrayMap<>();
-    private List<String> sonorValues = new ArrayList<>();
 
+    private TextView tvnoise, tv, tvLight, tvAccele, tvGPS;
+
+    private Runnable mSleepTask = new Runnable() {
+        public void run() {
+            start();
+        }
+    };
+
+
+    private Runnable mPollTask = new Runnable() {
+        public void run() {
+            double amp = mSensor.getAmplitude();
+            updateDisplay(amp);
+            mHandler.postDelayed(mPollTask, 500);
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-        // Get an instance to the accelerometer
+        mSensor = new DetectNoise();
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "NoiseAlert");
+
         this.sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         this.accelerometer = this.sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        this.lightsensor = this.sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+        this.lightSensor = this.sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
 
-        // on crée un nouveau TextView, qui est un widget permettant
-        // d'afficher du texte
-        tv = new TextView(this);
-        tvlight = new TextView(this);
-        tvaccele = new TextView(this);
-        tvGPS = new TextView(this);
+        //TextView
+        tv = findViewById(R.id.tv);
+        tvLight = findViewById(R.id.tvLight);
+        tvAccele = findViewById(R.id.tvAccele);
+        tvGPS = findViewById(R.id.tvGPS);
+        tvnoise = findViewById(R.id.tvnoise);
 
-        //locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        //if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            //return;
-        //}
-
-        //Location location = locationManager.getLastKnownLocation(locationManager.NETWORK_PROVIDER);
-        //onLocationChanged(location);
-
-        LinearLayout ll = new LinearLayout(this);
-        ll.setOrientation(LinearLayout.VERTICAL);
-
-        // on veut que notre objet soit averti lors d'un évènement OnTouch sur
-        // notre TextView :
         tv.setOnTouchListener(this);
 
-        ll.addView(tvlight);
-        //ll.addView(tvGPS);
-        ll.addView(tvaccele);
-        ll.addView(tv);
-
-        // remplacer tout le contenu de notre activité par le TextView
-        setContentView(ll);
-
-        tvlight.setOnClickListener(new View.OnClickListener() {
+        locationManager = (LocationManager)getSystemService(LOCATION_SERVICE);
+        locationListener = new LocationListener() {
             @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, Jeu.class);
-                intent.putExtra("lightValues", (ArrayList<String>)lightValues);
+            public void onLocationChanged(Location location) {
+                double longitude = location.getLongitude();
+                double latitude = location.getLatitude();
+                tvGPS.setText("logitude: "+ location.getLongitude() + " latitude " + location.getLongitude());
+                locationValues.put(longitude, latitude);
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+
+            }
+
+            @Override
+            public void onProviderEnabled(String provider) {
+
+            }
+
+            @Override
+            public void onProviderDisabled(String provider) {
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                 startActivity(intent);
             }
-        });
+        };
+        configure();
     }
 
     @Override
-    public boolean onTouch(View view, MotionEvent motionEvent) {
-        float posx = motionEvent.getX();
-        if(toucheValues.size() < 5){
-            toucheValues.add(Float.toString(posx));
-            Log.d("valeurs touch", toucheValues.toString());
+    public void onResume() {
+        super.onResume();
+        sensorManager.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        if (!mRunning) {
+            mRunning = true;
+            start();
         }
-        tv.setText("X:" + Float.toString(posx));
+    }
+    @Override
+    public void onStop() {
+        super.onStop();
+        stop();
+    }
+    private void start() {
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},
+                    0);
+        }
+
+        mSensor.start();
+        if (!mWakeLock.isHeld()) {
+            mWakeLock.acquire();
+        }
+        mHandler.postDelayed(mPollTask, 500);
+    }
+    private void stop() {
+        if (mWakeLock.isHeld()) {
+            mWakeLock.release();
+        }
+        mHandler.removeCallbacks(mSleepTask);
+        mHandler.removeCallbacks(mPollTask);
+        mSensor.stop();
+        updateDisplay(0.0);
+        mRunning = false;
+
+    }
+
+    private void updateDisplay(double signalEMA) {
+        listeSonore.add(signalEMA);
+        tvnoise.setText(signalEMA+"dB" +"\n");
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        float posx = event.getX();
+        toucheValues.add(posx);
+        tv.setText("X:" + Float.toString(posx) +"\n");
         return true;
     }
 
     @Override
-    public void onSensorChanged(SensorEvent sensorEvent) {
-        String lightvalue = String.valueOf(sensorEvent.values[0]);
-        if (sensorEvent.sensor.getType() == Sensor.TYPE_LIGHT) {
-            if(lightValues.size() < 5){
-                lightValues.add(lightvalue);
-                Log.d("valeurs light", lightValues.toString());
-            }
-            tvlight.setText("Light Sensor: " + lightvalue);
-        } else if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
-            mSensorX = sensorEvent.values[0];
-            mSensorY = sensorEvent.values[1];
-            if(accelerometerValues.size() < 5){
-                accelerometerValues.put(mSensorX, mSensorY);
-                Log.d("valeurs accelerometre", accelerometerValues.toString());
-            }
-            tvaccele.setText(String.valueOf("Acceleration X: " + mSensorX + " Acceleration Y: " + mSensorY));
+    public void onSensorChanged(SensorEvent event) {
+        if(event.sensor.getType() == Sensor.TYPE_LIGHT){
+            float lightvalue = event.values[0];
+            listeLight.add(lightvalue);
+            tvLight.setText("light sensor" + lightvalue+"\n");
+        }else if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
+            mSensorX = event.values[0];
+            mSensorY = event.values[1];
+            accelerometerValues.put(mSensorX, mSensorY);
+            tvAccele.setText("acceleration X: "+mSensorX + " acceleration Y: " +mSensorY +"\n");
         }
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        sensorManager.registerListener(this, lightsensor, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int i) {
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        double longtitude = 0;
-        longtitude = location.getLongitude();
-        double latitude = 0;
-        latitude = location.getLatitude();
-        if(locationValues.size()<5){
-            locationValues.put(longtitude, latitude);
-            Log.d("valeurs de localisation", locationValues.toString());
+        double longitude = location.getLongitude();
+        double latitude = location.getLatitude();
+        locationValues.put(longitude, latitude);
+        tvGPS.setText("logitude: "+longitude + "latitude: "+ latitude +"\n");
+
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode){
+            case 10:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                    configure();
+                return;
         }
-
-        tvGPS.setText("Longtitude: " + longtitude + " Latitude: " + latitude);
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
-    @Override
-    public void onStatusChanged(String s, int i, Bundle bundle) {
-
-    }
-
-    @Override
-    public void onProviderEnabled(String s) {
-
-    }
-
-    @Override
-    public void onProviderDisabled(String s) {
-
+    void configure(){
+        // first check for permissions
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.INTERNET}
+                        ,10);
+            }
+            return;
+        }
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,5000,0,locationListener);
     }
 }
